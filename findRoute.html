@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #map {
+      width: 50%;
+      height: 200px;
+      background-color: grey;
+      }
+    </style>
+  </head>
+<body>
+  <p>Source:</p>
+  <input id="src" placeholder="a city, full address, landmark etc.">
+  <p>Destination:</p>
+  <input id="dest" placeholder="a city, full address, landmark etc.">
+  <p> Avoid Tolls <input type="radio" onclick="myFunction()" id="toll"></p>  <br>
+  <button type="button" onclick="myFunction()">Submit</button>
+  <br>
+  <div id="output"></div>
+  <br>
+  <div id="printMin"></div>
+  <br>
+  <p>Please enter speed to calculate ETA </p>
+  <input id="speed">
+  <button type="button" onclick="myFunction()">Check ETA</button>
+  <br>
+  <div id="printETA"> </div>
+  <br>
+  <br>
+  <div id="map"></div>
+  <script>
+
+  //dummy map
+  function iniM() {
+    var uluru = {lat: -25.363, lng: 131.044};
+    var map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 4,
+      center: uluru
+    });
+    var marker = new google.maps.Marker({
+      position: uluru,
+          map: map
+    });
+  }
+
+  function myFunction() {
+
+    var source, destination, speed,tolls;
+
+    // Get the value of input fields
+    source = document.getElementById("src").value;
+    destination = document.getElementById("dest").value;
+    speed = document.getElementById("speed").value;
+    tolls = document.getElementById("toll").checked;
+
+    initMap(source, destination, speed, tolls);
+  }
+
+  function initMap(source,destination,speed,tolls) {
+
+      // calling Maps API's direction service to return multiple routes
+      var directionsService = new google.maps.DirectionsService();
+
+      // adding traffic layer to account for traffic delays.
+      var trafficLayer = new google.maps.TrafficLayer();
+      trafficLayer.setMap(map);
+
+      //constructing the request object.
+      var request = {
+        origin      : source, // a city, full address, landmark etc
+        destination : destination,
+        travelMode  : google.maps.DirectionsTravelMode.DRIVING,
+        provideRouteAlternatives: true,
+      };
+
+      //retrieving details of routes from the JSON output returned.
+      directionsService.route(request, function(response, status) {
+        if (status == google.maps.DirectionsStatus.OK ) {
+          var dist=[], time=[];
+          for(i=0;i<response.routes.length;i++) {
+            dist.push(response.routes[i].legs[0].distance.value);
+            time.push((response.routes[i].legs[0].duration.value/60));
+          }
+          if (typeof speed === 'undefined' || !speed) {
+            print_distance_time(dist,time,speed);
+          } else {
+            find_min_val(dist,time,speed);
+            }
+        } else {
+            alert("Please check the locations correctly");
+          }
+      });
+    }
+
+    function print_distance_time(dist,time,speed){
+      for(j=0;j<dist.length;j++){
+        document.getElementById('output').innerHTML += "Distance for route " + j + " is " + dist[j] +"Time for route " + j + " is " +time[j] + " mins <br/>";
+      }
+
+      find_min_val(dist,time,speed)
+    }
+
+    // find the minimum distance and speed.
+    function find_min_val(dist,time,speed) {
+
+      var min_dist = Math.min.apply(null,dist);
+      var min_time = Math.min.apply(null,time);
+
+      if (speed.length !== 0) {
+        var time_remaining = min_dist/speed;
+        etaCalculated = "ETA for the specified speed is " + time_remaining + " mins";
+        document.getElementById('printETA').innerHTML = etaCalculated;
+      }
+
+      else print_min_values(min_dist,min_time);
+
+     }
+
+    function print_min_values(min_dist,min_time) {
+
+      p = "Min distance is to the destination is "+ min_dist +" Minimum Time take to reach destination is "+min_time;
+      document.getElementById('printMin').innerHTML = p;
+    }
+  </script>
+
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqTOnz6p3kw9JNpaXAKcsKrViV1J9nGgM&callback=iniM"
+  type="text/javascript"></script>
+
+  </body>
+</html>
